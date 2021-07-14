@@ -33,7 +33,7 @@ class RedisCallback(BackendQueue):
              self.redis = aioredis.from_url(kwargs['redis_uri'])
              self.key = key if key else self.default_key
              self.numeric_type = numeric_type
-         else:
+        else:
              self.redis = aioredis.from_url(f"{prefix}{host}:{port}")
              self.key = key if key else self.default_key
              self.numeric_type = numeric_type
