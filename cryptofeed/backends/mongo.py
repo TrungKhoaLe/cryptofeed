@@ -14,12 +14,17 @@ from cryptofeed.backends.backend import (BackendBookCallback, BackendBookDeltaCa
 
 
 class MongoCallback:
-    def __init__(self, db, uri, key=None, numeric_type=str, connection_args={}, **kwargs):
-        self.conn = motor.motor_asyncio.AsyncIOMotorClient(uri, **connection_args)
-        self.db = self.conn[db]
-        self.numeric_type = numeric_type
-        self.collection = key if key else self.default_key
-
+    def __init__(self, db, host='127.0.0.1', port=27017, key=None, numeric_type=str, **kwargs):
+        if 'mongodb_uri' in kwargs.keys():
+            self.conn = motor.motor_asyncio.AsyncIOMotorClient(mongodb_uri)
+            self.db = self.conn[db]
+            self.numeric_type = numeric_type
+            self.collection = key if key else self.default_key
+        else:
+            self.conn = motor.motor_asyncio.AsyncIOMotorClient(host, port)
+            self.db = self.conn[db]
+            self.numeric_type = numeric_type
+            self.collection = key if key else self.default_key
     async def write(self, feed: str, symbol: str, timestamp: float, receipt_timestamp: float, data: dict):
         if 'delta' in data:
             d = {'feed': feed, 'symbol': symbol, 'timestamp': timestamp, 'receipt_timestamp': receipt_timestamp, 'delta': data['delta'], 'bid': bson.BSON.encode(data['bid']), 'ask': bson.BSON.encode(data['ask'])}
