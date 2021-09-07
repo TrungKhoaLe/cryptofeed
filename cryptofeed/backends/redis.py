@@ -30,13 +30,13 @@ class RedisCallback(BackendQueue):
         if socket:
             prefix = 'unix://'
         if 'redis_uri' in kwargs.keys():
-             self.redis = aioredis.from_url(kwargs['redis_uri'])
-             self.key = key if key else self.default_key
-             self.numeric_type = numeric_type
+            self.redis = aioredis.from_url(kwargs['redis_uri'])
+            self.key = key if key else self.default_key
+            self.numeric_type = numeric_type
         else:
-             self.redis = aioredis.from_url(f"{prefix}{host}:{port}")
-             self.key = key if key else self.default_key
-             self.numeric_type = numeric_type
+            self.redis = aioredis.from_url(f"{prefix}{host}:{port}")
+            self.key = key if key else self.default_key
+            self.numeric_type = numeric_type
 
 class RedisZSetCallback(RedisCallback):
     async def write(self, feed: str, symbol: str, timestamp: float, receipt_timestamp: float, data: dict):
