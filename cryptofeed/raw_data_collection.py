@@ -15,7 +15,12 @@ from yapic import json
 
 from cryptofeed.defines import HUOBI, UPBIT, OKEX, OKCOIN
 from cryptofeed.exchanges import EXCHANGE_MAP
-
+import gzip
+import shutil
+import datetime
+import pandas as pd
+import os
+import sys
 
 def bytes_string_to_bytes(string):
     tree = ast.parse(string)
@@ -127,7 +132,7 @@ async def _playback(feed: str, filenames: list):
 
 
 class AsyncFileCallback:
-    def __init__(self, path, length=10000, rotate=1024 * 1024 * 100):
+    def __init__(self, path, length=10000, rotate=1024 * 1024 * 100, time_based_flushing=False):
         self.path = path
         self.length = length
         self.data = defaultdict(list)
@@ -135,6 +140,8 @@ class AsyncFileCallback:
         self.count = defaultdict(int)
         self.pointer = defaultdict(int)
         atexit.register(self.__del__)
+        self.time_based_flushing = time_based_flushing
+        self.time_range = pd.date_range(start='00:00:00', end='23:59:59', freq='T').time
 
     def __del__(self):
         self.stop()
@@ -159,9 +166,25 @@ class AsyncFileCallback:
             self.data[uuid] = []
             await fp.fsync()
 
-        if self.pointer[uuid] >= self.rotate:
-            self.count[uuid] += 1
-            self.pointer[uuid] = 0
+        current_time = datetime.datetime.now()
+        time_range_str = [x.isoformat(timespec='seconds') for x in self.time_range]
+        if current_time.hour == 0 and current_time.minute == 0 and current_time.second == 0:
+            with open(p, 'rb') as f_in:
+                with gzip.open(p + '.gz', 'wb') as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+            os.execv(sys.executable, ['python'] + sys.argv)
+
+        if self.time_based_flushing:
+            if current_time.time().isoformat(timespec='seconds') in time_range_str:
+                with open(p, 'rb') as f_in:
+                    with gzip.open(p + '.gz', 'wb') as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+                self.count[uuid] += 1
+                self.pointer[uuid] = 0
+        else:
+            if self.pointer[uuid] >= self.rotate:
+                self.count[uuid] += 1
+                self.pointer[uuid] = 0
 
     async def __call__(self, data: str, timestamp: float, uuid: str, endpoint: str = None, send: str = None, connect: str = None):
         if endpoint:

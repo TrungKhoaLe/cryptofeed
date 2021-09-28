@@ -61,7 +61,7 @@ setup(
     tests_require=["pytest"],
     install_requires=[
         "requests>=2.18.4",
-        "websockets>=7.0",
+        "websockets>=7.0, <10.0",
         "sortedcontainers>=1.5.9",
         "pandas",
         "pyyaml",
